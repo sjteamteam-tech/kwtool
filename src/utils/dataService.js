@@ -25,7 +25,11 @@ const determineStatus = (row) => {
         key.includes('แผนก')) continue;
         
     const val = String(row[key] || '');
-    if (val.startsWith('0') || val.includes('ชำรุด') || val.includes('ไม่พร้อม') || val.includes('ผิดปกติ') || val.includes('ไม่ครบ')) {
+    if (!val) continue;
+
+    // A row is "Needs Maintenance" if ANY checked item matches a failure pattern.
+    // Known failure patterns: starts with "0" (e.g. "0 ไม่พร้อมใช้งาน") or contains "❌"
+    if (val.startsWith('0') || val.includes('❌') || val === '0') {
       return 'Needs Maintenance';
     }
   }
