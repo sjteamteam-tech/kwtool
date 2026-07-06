@@ -1,25 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, AlertTriangle, CheckCircle, ShieldAlert } from 'lucide-react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { ShieldCheck, AlertTriangle, ListChecks } from 'lucide-react';
 import { fetchAllEquipmentData } from './utils/dataService';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+import Calendar from './components/Calendar';
+import './App.css';
 
 function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const [selectedYear, setSelectedYear] = useState('2568');
-  const [selectedMonth, setSelectedMonth] = useState('all');
+  const currentYearStr = String(new Date().getFullYear() + 543);
+  const currentMonthStr = String(new Date().getMonth());
+
+  const [selectedYear, setSelectedYear] = useState(currentYearStr);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedLocation, setSelectedLocation] = useState('all');
+  const [selectedEquipment, setSelectedEquipment] = useState('all');
 
   useEffect(() => {
     const loadData = async () => {
@@ -31,106 +27,57 @@ function App() {
     loadData();
   }, []);
 
-  // Filter data based on selected year/month
-  // The data structure contains a 'history' array of inspections for each equipment.
-  // We need to find the latest inspection within the selected timeframe.
+  // Filter data
   const filteredData = useMemo(() => {
     if (!data.length) return [];
+    let fd = data;
+    if (selectedType !== 'all') fd = fd.filter(d => d.type === selectedType);
+    if (selectedLocation !== 'all') fd = fd.filter(d => d.department === selectedLocation);
+    if (selectedEquipment !== 'all') fd = fd.filter(d => d.id === selectedEquipment);
+    return fd;
+  }, [data, selectedType, selectedLocation, selectedEquipment]);
 
-    return data.map(equip => {
-      let validHistory = equip.history;
-      
-      if (selectedYear !== 'all') {
-        const gregorianYear = parseInt(selectedYear) - 543;
-        validHistory = validHistory.filter(h => h.date && h.date.getFullYear() === gregorianYear);
-      }
-      
-      if (selectedMonth !== 'all') {
-        const monthIndex = parseInt(selectedMonth);
-        validHistory = validHistory.filter(h => h.date && h.date.getMonth() === monthIndex);
-      }
+  // Calculate compliance statistics for the current month
+  const stats = useMemo(() => {
+    let totalExpected = 0;
+    let totalCompleted = 0;
+    let totalDefects = 0;
 
-      const latestInPeriod = validHistory.length > 0 ? validHistory[0] : null;
-      
-      return {
-        ...equip,
-        currentStatus: latestInPeriod ? latestInPeriod.status : 'Unknown',
-        currentInspectionDate: latestInPeriod ? latestInPeriod.dateStr : 'ไม่มีข้อมูลในดือนนี้',
-        currentInspector: latestInPeriod ? latestInPeriod.inspector : '-',
-      };
-    });
-  }, [data, selectedYear, selectedMonth]);
+    const gregorianYear = parseInt(selectedYear) - 543;
+    const monthIndex = parseInt(selectedMonth);
+    const daysInMonth = new Date(gregorianYear, monthIndex + 1, 0).getDate();
 
-  const kpis = useMemo(() => {
-    const counts = {
-      ER: { ready: 0, maintenance: 0 },
-      IPD: { ready: 0, maintenance: 0 },
-      EMS: { ready: 0, maintenance: 0 }
-    };
+    filteredData.forEach(equip => {
+      const expectedPerDay = equip.type === 'EMS Box' ? 1 : 3;
+      totalExpected += expectedPerDay * daysInMonth;
 
-    filteredData.forEach(eq => {
-      if (eq.currentStatus === 'Ready') {
-        if (counts[eq.department]) counts[eq.department].ready++;
-      } else if (eq.currentStatus === 'Needs Maintenance') {
-        if (counts[eq.department]) counts[eq.department].maintenance++;
-      }
-    });
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = `${gregorianYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayData = equip.historyByDate[dateKey] || [];
+        
+        let shiftsCompleted = 0;
+        let dayDefects = 0;
+        
+        const countedShifts = new Set();
+        dayData.forEach(inspection => {
+          if (!countedShifts.has(inspection.shift)) {
+            countedShifts.add(inspection.shift);
+            shiftsCompleted++;
+          }
+          if (inspection.status === 'Needs Maintenance') {
+            dayDefects++;
+          }
+        });
 
-    return counts;
-  }, [filteredData]);
-
-  const chartData = useMemo(() => {
-    const types = ['Defibrillator', 'Auto CPR', 'EMS Box'];
-    const readyCounts = [0, 0, 0];
-    const maintCounts = [0, 0, 0];
-
-    filteredData.forEach(eq => {
-      let idx = types.indexOf(eq.type);
-      if (idx !== -1) {
-        if (eq.currentStatus === 'Ready') readyCounts[idx]++;
-        else if (eq.currentStatus === 'Needs Maintenance') maintCounts[idx]++;
+        totalCompleted += Math.min(shiftsCompleted, expectedPerDay);
+        totalDefects += dayDefects;
       }
     });
 
-    return {
-      labels: types,
-      datasets: [
-        {
-          label: 'พร้อมใช้งาน (Ready)',
-          data: readyCounts,
-          backgroundColor: 'rgba(16, 185, 129, 0.8)',
-          borderColor: 'rgb(16, 185, 129)',
-          borderWidth: 1,
-        },
-        {
-          label: 'ซ่อมบำรุง (Maintenance)',
-          data: maintCounts,
-          backgroundColor: 'rgba(239, 68, 68, 0.8)',
-          borderColor: 'rgb(239, 68, 68)',
-          borderWidth: 1,
-        }
-      ]
-    };
-  }, [filteredData]);
+    const completionRate = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { labels: { color: '#f8fafc' } }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: { color: '#94a3b8', stepSize: 1 },
-        grid: { color: 'rgba(255, 255, 255, 0.1)' }
-      },
-      x: {
-        ticks: { color: '#94a3b8' },
-        grid: { display: false }
-      }
-    }
-  };
+    return { totalExpected, totalCompleted, totalDefects, completionRate };
+  }, [filteredData, selectedYear, selectedMonth]);
 
   if (loading) {
     return (
@@ -141,14 +88,18 @@ function App() {
     );
   }
 
+  const gregorianYear = parseInt(selectedYear) - 543;
+  const monthIndex = parseInt(selectedMonth);
+
   return (
     <div className="dashboard-container">
       <div className="header">
         <div className="header-title">
           <h1>Medical Equipment Dashboard</h1>
-          <p>ระบบจัดการเครื่องมือทางการแพทย์ที่มีความเสี่ยงสูง</p>
+          <p>ระบบตรวจสอบความพร้อมใช้งานตามเกณฑ์ (Compliance Tracking)</p>
         </div>
-        <div className="filters">
+        
+        <div className="filters-grid">
           <div className="filter-group">
             <label>ปี พ.ศ.</label>
             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
@@ -160,7 +111,6 @@ function App() {
           <div className="filter-group">
             <label>เดือน</label>
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
-              <option value="all">ทุกเดือน</option>
               <option value="0">มกราคม</option>
               <option value="1">กุมภาพันธ์</option>
               <option value="2">มีนาคม</option>
@@ -175,106 +125,91 @@ function App() {
               <option value="11">ธันวาคม</option>
             </select>
           </div>
+          <div className="filter-group">
+            <label>ประเภท</label>
+            <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedEquipment('all'); }}>
+              <option value="all">ทุกประเภท</option>
+              <option value="Defibrillator">Defibrillator</option>
+              <option value="Auto CPR">Auto CPR</option>
+              <option value="EMS Box">EMS Box</option>
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>จุดวาง/แผนก</label>
+            <select value={selectedLocation} onChange={(e) => { setSelectedLocation(e.target.value); setSelectedEquipment('all'); }}>
+              <option value="all">ทุกจุดวาง</option>
+              <option value="ER">ER</option>
+              <option value="IPD">IPD</option>
+              <option value="EMS">EMS</option>
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>เครื่องเฉพาะเจาะจง</label>
+            <select value={selectedEquipment} onChange={(e) => setSelectedEquipment(e.target.value)}>
+              <option value="all">ดูทั้งหมดที่เลือก</option>
+              {data.filter(d => 
+                (selectedType === 'all' || d.type === selectedType) && 
+                (selectedLocation === 'all' || d.department === selectedLocation)
+              ).map(d => (
+                <option key={d.id} value={d.id}>{d.name} ({d.department})</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
       <div className="kpi-grid">
-        <div className="kpi-card er">
+        <div className="kpi-card" style={{ '--border-color': 'var(--accent-blue)' }}>
           <div className="kpi-header">
-            <div className="kpi-title">ห้องฉุกเฉิน (ER)</div>
-            <Activity color="#ef4444" size={24} />
+            <div className="kpi-title">อัตราการตรวจครบตามเกณฑ์</div>
+            <ListChecks color="var(--accent-blue)" size={24} />
           </div>
           <div className="kpi-stats">
-            <div className="stat-item ready">
-              <span className="stat-value">{kpis.ER.ready}</span>
-              <span className="stat-label">พร้อมใช้งาน</span>
-            </div>
-            <div className="stat-item maintenance">
-              <span className="stat-value">{kpis.ER.maintenance}</span>
-              <span className="stat-label">ซ่อมบำรุง</span>
+            <div className="stat-item">
+              <span className="stat-value" style={{ color: 'var(--accent-blue)' }}>{stats.completionRate}%</span>
+              <span className="stat-label">ตรวจไปแล้ว {stats.totalCompleted}/{stats.totalExpected} รอบ</span>
             </div>
           </div>
         </div>
         
-        <div className="kpi-card ipd">
+        <div className="kpi-card" style={{ '--border-color': 'var(--accent-green)' }}>
           <div className="kpi-header">
-            <div className="kpi-title">ตึกผู้ป่วยใน (IPD)</div>
-            <Activity color="#3b82f6" size={24} />
+            <div className="kpi-title">สถานะความพร้อมสูงสุด</div>
+            <ShieldCheck color="var(--accent-green)" size={24} />
           </div>
           <div className="kpi-stats">
-            <div className="stat-item ready">
-              <span className="stat-value">{kpis.IPD.ready}</span>
-              <span className="stat-label">พร้อมใช้งาน</span>
-            </div>
-            <div className="stat-item maintenance">
-              <span className="stat-value">{kpis.IPD.maintenance}</span>
-              <span className="stat-label">ซ่อมบำรุง</span>
+            <div className="stat-item">
+              <span className="stat-value" style={{ color: 'var(--accent-green)' }}>พร้อมใช้</span>
+              <span className="stat-label">เกณฑ์ตรวจผ่านส่วนใหญ่</span>
             </div>
           </div>
         </div>
 
-        <div className="kpi-card ems">
+        <div className="kpi-card" style={{ '--border-color': 'var(--accent-red)' }}>
           <div className="kpi-header">
-            <div className="kpi-title">ออกเหตุ (EMS)</div>
-            <ShieldAlert color="#10b981" size={24} />
+            <div className="kpi-title">พบข้อบกพร่อง/ชำรุด</div>
+            <AlertTriangle color="var(--accent-red)" size={24} />
           </div>
           <div className="kpi-stats">
-            <div className="stat-item ready">
-              <span className="stat-value">{kpis.EMS.ready}</span>
-              <span className="stat-label">พร้อมใช้งาน</span>
-            </div>
-            <div className="stat-item maintenance">
-              <span className="stat-value">{kpis.EMS.maintenance}</span>
-              <span className="stat-label">ซ่อมบำรุง</span>
+            <div className="stat-item">
+              <span className="stat-value" style={{ color: 'var(--accent-red)' }}>{stats.totalDefects}</span>
+              <span className="stat-label">ครั้งในเดือนนี้</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="main-content">
-        <div className="chart-section">
-          <div className="section-title">อัตราความพร้อมใช้งานแยกตามประเภท (ในเดือนที่เลือก)</div>
-          <div className="chart-container">
-            <Bar data={chartData} options={chartOptions} />
+        <div className="calendar-section">
+          <div className="section-header-row">
+            <div className="section-title">ปฏิทินความพร้อมใช้งานรายเดือน</div>
+            <div className="legend">
+              <div className="legend-item"><div className="indicator green"></div> พร้อมใช้งาน</div>
+              <div className="legend-item"><div className="indicator red"></div> ต้องซ่อมบำรุง</div>
+              <div className="legend-item"><div className="indicator gray"></div> ขาดตรวจ</div>
+            </div>
           </div>
-        </div>
-
-        <div className="table-section">
-          <div className="section-title">ประวัติการตรวจสอบล่าสุด (อัปเดตตามตัวกรอง)</div>
-          <div className="data-table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>อุปกรณ์</th>
-                  <th>แผนก</th>
-                  <th>วันที่ตรวจสอบ (ล่าสุด)</th>
-                  <th>ผู้ตรวจสอบ</th>
-                  <th>สถานะ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredData.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.name} ({item.type})</td>
-                    <td>{item.department}</td>
-                    <td>{item.currentInspectionDate}</td>
-                    <td>{item.currentInspector}</td>
-                    <td>
-                      <span className={`status-badge ${
-                        item.currentStatus === 'Ready' ? 'ready' : 
-                        item.currentStatus === 'Needs Maintenance' ? 'maintenance' : 'unknown'
-                      }`}>
-                        {item.currentStatus === 'Ready' ? <CheckCircle size={14} /> : 
-                         item.currentStatus === 'Needs Maintenance' ? <AlertTriangle size={14} /> : null}
-                        {item.currentStatus === 'Ready' ? 'พร้อมใช้งาน' : 
-                         item.currentStatus === 'Needs Maintenance' ? 'ต้องซ่อมบำรุง' : 'ไม่มีข้อมูล'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Calendar year={gregorianYear} month={monthIndex} data={filteredData} />
         </div>
       </div>
     </div>
