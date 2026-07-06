@@ -34,7 +34,7 @@ export default function Calendar({ year, month, data }) {
     data.forEach(equip => {
       // Determine expected shifts
       let expectedForEquip = 3; 
-      if (equip.type === 'EMS Box') expectedForEquip = 1;
+      if (equip.type === 'กล่องพยาบาล EMS') expectedForEquip = 1;
       
       if (totalExpectedShifts < expectedForEquip) {
         totalExpectedShifts = expectedForEquip;

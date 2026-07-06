@@ -215,7 +215,7 @@ function App() {
                 <div className="section-header-row">
                   <div className="section-title">
                     รอบการตรวจสอบรายเดือน 
-                    <span className="subtitle-note">(จุดสี 3 จุด แสดงเวร: เช้า / บ่าย / ดึก)</span>
+                    <span className="subtitle-note">(จุดสี 3 จุด แสดงเวร: ดึก / เช้า / บ่าย)</span>
                   </div>
                   <div className="legend">
                     <div className="legend-item"><div className="indicator green"></div> พร้อมใช้งาน</div>

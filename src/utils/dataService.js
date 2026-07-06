@@ -28,9 +28,9 @@ const determineStatus = (row) => {
 
 const determineShift = (shiftStr) => {
   if (!shiftStr) return 0;
-  if (shiftStr.includes('1 เช้า') || shiftStr.includes('1')) return 1;
-  if (shiftStr.includes('2 บ่าย') || shiftStr.includes('2')) return 2;
-  if (shiftStr.includes('3 ดึก') || shiftStr.includes('3')) return 3;
+  if (shiftStr.includes('3 ดึก') || (shiftStr.includes('3') && !shiftStr.includes('1') && !shiftStr.includes('2'))) return 1;
+  if (shiftStr.includes('1 เช้า') || shiftStr.includes('1')) return 2;
+  if (shiftStr.includes('2 บ่าย') || shiftStr.includes('2')) return 3;
   return 1; // fallback
 };
 

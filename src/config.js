@@ -52,7 +52,7 @@ export const EQUIPMENT_SOURCES = [
     name: 'Automated CPR - เครื่องที่ 1',
     department: 'ER',
     type: 'เครื่องปั๊มหัวใจอัตโนมัติ',
-    csvUrl: 'https://docs.google.com/spreadsheets/d/1HWFQHpQo8x7pCJ3axWRGprEdzcVUC9_-EJG5TwjBgQ8/export?format=csv&gid=1389635988',
+    csvUrl: 'https://docs.google.com/spreadsheets/d/1HWFQHpQo8x7pCJ3axWRGprEdzcVUC9_-EJG5TwjBgQ8/export?format=csv&gid=145316950',
     formUrl: 'https://docs.google.com/forms/d/1nZEtrphyqFM15jYauIWZNrprj01XxGpzzFlnx6Hoetk/preview'
   },
   {
@@ -60,7 +60,7 @@ export const EQUIPMENT_SOURCES = [
     name: 'Automated CPR - เครื่องที่ 2',
     department: 'ER',
     type: 'เครื่องปั๊มหัวใจอัตโนมัติ',
-    csvUrl: 'https://docs.google.com/spreadsheets/d/1HWFQHpQo8x7pCJ3axWRGprEdzcVUC9_-EJG5TwjBgQ8/export?format=csv&gid=1389635988',
+    csvUrl: 'https://docs.google.com/spreadsheets/d/1HWFQHpQo8x7pCJ3axWRGprEdzcVUC9_-EJG5TwjBgQ8/export?format=csv&gid=545400491',
     formUrl: 'https://docs.google.com/forms/d/15eqocQitOk6Oh3clVBaX1sqZF2qtrauqdUMYdLdcCAs/preview'
   },
   {
