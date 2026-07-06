@@ -12,7 +12,7 @@ export const EQUIPMENT_SOURCES = [
     name: 'Defibrillator - เครื่องที่ 2',
     department: 'ER',
     type: 'เครื่องกระตุกหัวใจ',
-    csvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vROl3pIfijhluTHB8QPStn7SaNCeUa24hJvxqiOCZU4uyPY7l-szQTnuDdJuHis_HbSwwFxuWx5tj6g/pub?output=csv&gid=1205698520',
+    csvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vROl3pIfijhluTHB8QPStn7SaNCeUa24hJvxqiOCZU4uyPY7l-szQTnuDdJuHis_HbSwwFxuWx5tj6g/pub?output=csv&gid=1447169974',
     formUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfJsF1RunE0xDF7slHq4PHDug5DYFoMTP2kUdbilar_O9rLVg/viewform'
   },
   {
