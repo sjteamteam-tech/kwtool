@@ -80,7 +80,19 @@ function App() {
 
   const getEquipmentStats = (equip) => {
     const expectedPerDay = equip.type === 'กล่องพยาบาล EMS' ? 1 : 3;
-    const totalExpected = expectedPerDay * daysInMonth;
+    
+    const now = new Date();
+    let daysToCount = daysInMonth;
+    
+    if (gregorianYear === now.getFullYear() && monthIndex === now.getMonth()) {
+      // Current month: count up to today
+      daysToCount = now.getDate();
+    } else if (gregorianYear > now.getFullYear() || (gregorianYear === now.getFullYear() && monthIndex > now.getMonth())) {
+      // Future month
+      daysToCount = 0;
+    }
+
+    const totalExpected = expectedPerDay * daysToCount;
     
     let totalCompleted = 0;
     let totalReady = 0;
@@ -107,7 +119,9 @@ function App() {
       totalReady += Math.min(shiftsReady, expectedPerDay);
     }
 
-    const completionRate = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
+    let completionRate = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
+    if (completionRate > 100) completionRate = 100; // Cap at 100% in case of extra inspections
+
     const readinessRate = totalCompleted > 0 ? Math.round((totalReady / totalCompleted) * 100) : 0;
 
     return { completionRate, readinessRate };
