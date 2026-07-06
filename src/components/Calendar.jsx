@@ -70,7 +70,7 @@ export default function Calendar({ year, month, data }) {
   return (
     <div className="calendar">
       <div className="weekdays">
-        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        <div>อา.</div><div>จ.</div><div>อ.</div><div>พ.</div><div>พฤ.</div><div>ศ.</div><div>ส.</div>
       </div>
       <div className="days-grid">
         {blanks.map(b => <div key={`blank-${b}`} className="day empty"></div>)}

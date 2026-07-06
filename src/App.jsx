@@ -3,6 +3,49 @@ import { fetchAllEquipmentData } from './utils/dataService';
 import Calendar from './components/Calendar';
 import './App.css';
 
+const getChecklist = (type) => {
+  if (type === 'เครื่องกระตุกหัวใจ') return [
+    '(1) จอแสดงผลความพร้อมใช้เบื้องต้น',
+    '(2) ตัว paddle defibrillator ประจำเครื่อง',
+    '(3) ความพร้อมใช้แบตเตอรี่',
+    '(4) ผลทดสอบระบบความพร้อมใช้ของเครื่อง(Delivery test)',
+    '(5) Electrode pads(อุปกรณ์สำรองมากับเครื่องสำหรับระบบAED)',
+    '(6) แผ่นอิเลคโทรด (Red Dot Electrode) EKG',
+    '(7) กระดาษปริ้นเตอร์ เครื่องdefibrillator',
+    '(8) Electrode Gel',
+    '(9) อุปกรณ์วัดความดันโลหิต BP(สำหรับเด็กและผู้ใหญ่)',
+    '(10) อุปกรณ์วัดออกซิเจนปลายนิ้วมือ'
+  ];
+  if (type === 'เครื่องปั๊มหัวใจอัตโนมัติ') return [
+    '(1) แบตเตอรี่เต็มหรือไม่',
+    '(2) เครื่องแสดงผลผิดปกติหรือไม่',
+    '(3) จำนวนแผ่นรองสำหรับกดหน้าอก',
+    '(4) อุปกรณ์เสริมของเครื่องปั๊มหัวใจอัตโนมัติ ครบถ้วนหรือไม่'
+  ];
+  if (type === 'กล่องพยาบาล EMS') return [
+    '1.1 ปรอทวัดไข้',
+    '1.2 เครื่องเจาะ DTX พร้อมชุดเจาะ',
+    '1.3 Tourniquet',
+    '1.4 กระปุกออกซิเจน',
+    '1.5 O2 Cannula',
+    '1.6 O2 Mask with bag',
+    '1.7 T-way',
+    '2.1 Medi-cut No.18,20,22,24 อย่างละ 2 ชิ้น',
+    '2.2 Syringe ขนาด 3,5,10,20,50 อย่างละ 2 ชิ้น',
+    '2.3 Needle No 18,20,21,23,24 อย่างละ 3 ชิ้น',
+    '2.4 Elastic bandage ขนาด 3" 4" 6" อย่างละ 2 ชิ้น',
+    '2.5 Set IV เด็กและผู้ใหญ่ อย่างละ 2 ชิ้น',
+    '2.6 0.9% NSS 1000 ml. ต้องมีจำนวน 1 ขวด',
+    '2.7 5% DN/2 1000 ml. ต้องมีจำนวน 1 ขวด',
+    '2.8 50% Glucose inj. 50 ml. ต้องมีจำนวน 1 ขวด',
+    '2.9 Sterile water 100 ml. ต้องมีจำนวน 1 ขวด',
+    '2.10 Transpore 1 " ต้องมีจำนวน 2 ชิ้น',
+    '2.11 Alcohol Ball ต้องมีจำนวน 2 แพ็ก',
+    '2.12 อุปกรณ์ชุดทำแผล'
+  ];
+  return [];
+};
+
 function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +55,7 @@ function App() {
 
   const [selectedYear, setSelectedYear] = useState(currentYearStr);
   const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
-  const [selectedLocation, setSelectedLocation] = useState('ER'); // Default to ER instead of all to avoid clutter
+  const [selectedLocation, setSelectedLocation] = useState('ER');
 
   useEffect(() => {
     const loadData = async () => {
@@ -24,7 +67,6 @@ function App() {
     loadData();
   }, []);
 
-  // Filter data to only show equipment in the selected location
   const filteredData = useMemo(() => {
     if (!data.length) return [];
     let fd = data;
@@ -36,13 +78,12 @@ function App() {
   const monthIndex = parseInt(selectedMonth);
   const daysInMonth = new Date(gregorianYear, monthIndex + 1, 0).getDate();
 
-  // Helper to calculate stats per equipment
   const getEquipmentStats = (equip) => {
-    const expectedPerDay = equip.type === 'EMS Box' ? 1 : 3;
+    const expectedPerDay = equip.type === 'กล่องพยาบาล EMS' ? 1 : 3;
     const totalExpected = expectedPerDay * daysInMonth;
     
     let totalCompleted = 0;
-    let totalReady = 0; // Shifts that were inspected and are ready
+    let totalReady = 0;
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateKey = `${gregorianYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -130,6 +171,7 @@ function App() {
       <div className="equipment-list">
         {filteredData.map((equip) => {
           const stats = getEquipmentStats(equip);
+          const checklist = getChecklist(equip.type);
           
           return (
             <div key={equip.id} className="equipment-card">
@@ -149,17 +191,38 @@ function App() {
                   </div>
                 </div>
               </div>
+
+              <div className="equipment-actions">
+                {equip.formUrl && (
+                  <a href={equip.formUrl} target="_blank" rel="noopener noreferrer" className="btn-form">
+                    📝 กรอกแบบตรวจสอบ
+                  </a>
+                )}
+                
+                {checklist.length > 0 && (
+                  <details className="checklist-details">
+                    <summary>ดูรายการตรวจสอบ (Checklist)</summary>
+                    <ul className="checklist-ul">
+                      {checklist.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </div>
               
               <div className="calendar-wrapper">
                 <div className="section-header-row">
-                  <div className="section-title">รอบการตรวจสอบรายเดือน</div>
+                  <div className="section-title">
+                    รอบการตรวจสอบรายเดือน 
+                    <span className="subtitle-note">(จุดสี 3 จุด แสดงเวร: เช้า / บ่าย / ดึก)</span>
+                  </div>
                   <div className="legend">
                     <div className="legend-item"><div className="indicator green"></div> พร้อมใช้งาน</div>
                     <div className="legend-item"><div className="indicator red"></div> ต้องซ่อมบำรุง</div>
                     <div className="legend-item"><div className="indicator gray"></div> ขาดตรวจ</div>
                   </div>
                 </div>
-                {/* We pass an array containing just this equipment to the Calendar */}
                 <Calendar year={gregorianYear} month={monthIndex} data={[equip]} />
               </div>
             </div>
