@@ -38,12 +38,17 @@ const determineStatus = (row) => {
 
 const determineShift = (shiftStr) => {
   if (!shiftStr) return 0;
-  // Night shift (00:00 - 08:00) -> Dot 1
-  if (shiftStr.includes('ดึก') || (shiftStr.includes('3') && !shiftStr.includes('1') && !shiftStr.includes('2'))) return 1;
-  // Morning shift (08:00 - 16:00) -> Dot 2
-  if (shiftStr.includes('เช้า') || shiftStr.includes('1')) return 2;
-  // Afternoon shift (16:00 - 00:00) -> Dot 3
-  if (shiftStr.includes('บ่าย') || shiftStr.includes('2')) return 3;
+  
+  // Prioritize exact text keywords to avoid substring issues like '16.00' matching '1'
+  if (shiftStr.includes('ดึก')) return 1;
+  if (shiftStr.includes('เช้า')) return 2;
+  if (shiftStr.includes('บ่าย')) return 3;
+
+  // Fallback to numbers if text is missing
+  if (shiftStr.includes('3')) return 1;
+  if (shiftStr.includes('1')) return 2;
+  if (shiftStr.includes('2')) return 3;
+
   return 1; // fallback
 };
 
